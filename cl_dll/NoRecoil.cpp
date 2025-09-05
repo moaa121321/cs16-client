@@ -1,4 +1,3 @@
-// NoRecoil.cpp
 #include <math.h>
 #include "hud.h"
 #include "cl_util.h"
@@ -7,26 +6,23 @@
 
 cvar_t *cl_norecoil = NULL;
 
-// Vektör kopyalama fonksiyonu
+// Vektör işlemleri için yardımcı fonksiyonlar
 static inline void VectorCopy(const float *src, float *dst) {
     dst[0] = src[0];
     dst[1] = src[1];
     dst[2] = src[2];
 }
 
-// Vektör uzunluğu hesaplama
 static inline float VectorLength(const float *v) {
     return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
 }
 
-// Vektör ölçeklendirme
 static inline void VectorScale(const float *in, float scale, float *out) {
     out[0] = in[0] * scale;
     out[1] = in[1] * scale;
     out[2] = in[2] * scale;
 }
 
-// Maximum değer bulma
 static inline float max(float a, float b) {
     return a > b ? a : b;
 }
