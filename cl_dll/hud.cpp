@@ -35,6 +35,7 @@
 #include "camera.h"
 
 #include "draw_util.h"
+#include "NoRecoil.h"
 
 #if _WIN32
 #define strncasecmp _strnicmp
@@ -121,6 +122,12 @@ void __CmdFunc_InputCommandSpecial()
 	gEngfuncs.pfnClientCmd("_special");
 #endif
 }
+
+// norec
+void GameUI_Init(void) {
+    NoRecoil_Init();
+}
+
 
 void __CmdFunc_GunSmoke()
 {
