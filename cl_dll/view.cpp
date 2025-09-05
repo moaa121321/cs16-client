@@ -363,18 +363,18 @@ void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
     if (!cl_norecoil || cl_norecoil->value == 0.0f)
         return;
     
-    // ESKİ KOD - sadece geri tepmeyi azalt
-    float punch[3], length;
-    VectorCopy(punchangle, punch);
-    length = VectorLength(punch);
-    length -= (10.0f + length * 0.5f) * frametime;
-    length = max(length, 0.0f);
-    VectorScale(punch, length, punch);
+    // 1. GERİ TEPMEYİ TAMAMEN SIFIRLA (hem görsel hem fiziksel)
+    punchangle[0] = 0.0f;
+    punchangle[1] = 0.0f;
+    punchangle[2] = 0.0f;
     
-    // View açılarını DEĞİŞTİRME, sadece punchangle'ı güncelle
-    punchangle[0] = punch[0];
-    punchangle[1] = punch[1];
-    punchangle[2] = punch[2];
+    // 2. Mermi yayılımını (spread) TAMAMEN SIFIRLA
+    // Punchangle'ı çok küçük bir değer yaparak spread'i yok et
+    punchangle[0] = 0.001f;  // Neredeyse sıfır
+    punchangle[1] = 0.001f;  // Neredeyse sıfır
+    punchangle[2] = 0.001f;  // Neredeyse sıfır
+    
+    // 3. View açılarını DEĞİŞTİRME (mouse hareketi bozulmasın)
 }
 // ========== NORECOIL FONKSİYONU SONU ==========
 /*
