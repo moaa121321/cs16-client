@@ -35,7 +35,6 @@
 #include "camera.h"
 
 #include "draw_util.h"
-#include "NoRecoil.h"
 
 #if _WIN32
 #define strncasecmp _strnicmp
@@ -123,19 +122,6 @@ void __CmdFunc_InputCommandSpecial()
 #endif
 }
 
-// norec
-void GameUI_Init(void) {
-    NoRecoil_Init();
-}
-
-void V_CalcRefdef(struct ref_params_s *pparams) {
-    // Orijinal hesaplamalar...
-    
-    // NoRecoil uygula
-    ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
-    
-    // Diğer hesaplamalar...
-}
 
 void __CmdFunc_GunSmoke()
 {
