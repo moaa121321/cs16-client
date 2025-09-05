@@ -128,6 +128,14 @@ void GameUI_Init(void) {
     NoRecoil_Init();
 }
 
+void V_CalcRefdef(struct ref_params_s *pparams) {
+    // Orijinal hesaplamalar...
+    
+    // NoRecoil uygula
+    ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
+    
+    // Diğer hesaplamalar...
+}
 
 void __CmdFunc_GunSmoke()
 {
