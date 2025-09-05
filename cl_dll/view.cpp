@@ -363,33 +363,24 @@ void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
     if (!cl_norecoil || cl_norecoil->value == 0.0f)
         return;
     
-    float punch[3], length;
+    static vec3_t originalViewangles;
+    static bool firstRun = true;
     
-    // Punchangle vektörünü kopyala
-    punch[0] = punchangle[0];
-    punch[1] = punchangle[1];
-    punch[2] = punchangle[2];
+    if (firstRun) {
+        // İlk çalıştırmada orijinal view açılarını kaydet
+        VectorCopy(viewangle, originalViewangles);
+        firstRun = false;
+    }
     
-    // Vektör uzunluğunu hesapla
-    length = sqrtf(punch[0]*punch[0] + punch[1]*punch[1] + punch[2]*punch[2]);
+    // Geri tepmeyi TAMAMEN sıfırla
+    punchangle[0] = 0.0f;
+    punchangle[1] = 0.0f;
+    punchangle[2] = 0.0f;
     
-    // Zamanla azalt
-    length -= (10.0f + length * 0.5f) * frametime;
-    
-    // Negatif olmamasını garantile
-    if (length < 0.0f) length = 0.0f;
-    
-    // Vektörü ölçeklendir
-    punch[0] = punch[0] * length;
-    punch[1] = punch[1] * length;
-    punch[2] = punch[2] * length;
-    
-    // View açılarına ekle (2x çarparak tepkiyi karşıla)
-    viewangle[0] += punch[0] * 2.0f;
-    viewangle[1] += punch[1] * 2.0f;
+    // View açılarını orijinal değerlerinde sabit tut
+    VectorCopy(originalViewangles, viewangle);
 }
 // ========== NORECOIL FONKSİYONU SONU ==========
-
 /*
 ==================
 V_CalcGunAngle
