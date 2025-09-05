@@ -1,5 +1,3 @@
-
-// NoRecoil.h
 #ifndef __NORECOIL_H__
 #define __NORECOIL_H__
 
