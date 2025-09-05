@@ -56,6 +56,10 @@
 #define max(a,b)  (((a) > (b)) ? (a) : (b))
 #endif
 
+// ========== NORECOIL EXTERN ==========
+extern cvar_t *cl_norecoil;  // view.cpp'de zaten tanımlı
+// ========== NORECOIL EXTERN SONU ==========
+
 // Globals used by game logic
 const Vector g_vecZero = Vector( 0, 0, 0 );
 enginefuncs_t g_engfuncs;
@@ -517,25 +521,31 @@ void CBasePlayerWeapon::RetireWeapon()
 
 Vector CBaseEntity::FireBullets3 ( Vector vecSrc, Vector vecDirShooting, float flSpread, float flDistance, int iPenetration, int iBulletType, int iDamage, float flRangeModifier, entvars_t *pevAttacker, bool bPistol, int shared_rand )
 {
-	float x, y, z;
+    // ========== NO SPREAD EKLE ==========
+    if (cl_norecoil && cl_norecoil->value != 0.0f) {
+        return Vector(0.0f, 0.0f, 0.0f);  // TAM MERKEZ!
+    }
+    // ========== NO SPREAD SONU ==========
+    
+    float x, y, z;
 
-	if ( pevAttacker )
-	{
-		x = UTIL_SharedRandomFloat(shared_rand, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 1, -0.5, 0.5);
-		y = UTIL_SharedRandomFloat(shared_rand + 2, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 3, -0.5, 0.5);
-	}
-	else
-	{
-		do
-		{
-			x = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
-			y = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
-			z = x * x + y * y;
-		}
-		while (z > 1);
-	}
+    if ( pevAttacker )
+    {
+        x = UTIL_SharedRandomFloat(shared_rand, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 1, -0.5, 0.5);
+        y = UTIL_SharedRandomFloat(shared_rand + 2, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 3, -0.5, 0.5);
+    }
+    else
+    {
+        do
+        {
+            x = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
+            y = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
+            z = x * x + y * y;
+        }
+        while (z > 1);
+    }
 
-	return Vector(x * flSpread, y * flSpread, 0.0f);
+    return Vector(x * flSpread, y * flSpread, 0.0f);
 }
 /*
 =====================
