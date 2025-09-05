@@ -248,6 +248,8 @@ private:
 	cvar_t *cl_crosshair_color;
 	cvar_t *cl_crosshair_translucent;
 	cvar_t *hud_draw;
+// cvardef.h veya hud.h dosyasının en altına ekleyin
+extern cvar_t *cl_norecoil;
 };
 
 //
