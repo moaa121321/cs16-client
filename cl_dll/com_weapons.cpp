@@ -24,6 +24,8 @@
 #include "entity_state.h"
 #include "r_efx.h"
 
+extern cvar_t *cl_norecoil;  // view.cpp'de zaten tanımlı, burada sadece kullan
+
 // g_runfuncs is true if this is the first time we've "predicated" a particular movement/firing
 //  command.  If it is 1, then we should play events/sounds etc., otherwise, we just will be
 //  updating state info, but not firing events
@@ -216,28 +218,34 @@ UTIL_SharedRandomLong
 */
 int UTIL_SharedRandomLong( unsigned int seed, int low, int high )
 {
-	unsigned int range;
+    // ========== NO SPREAD EKLE ==========
+    if (cl_norecoil && cl_norecoil->value != 0.0f) {
+        return (low + high) / 2;  // Ortalama değer
+    }
+    // ========== NO SPREAD SONU ==========
+    
+    // ORİJİNAL KODU AYNEN KORU - DEĞİŞTİRME!
+    unsigned int range;
 
-	U_Srand( (int)seed + low + high );
+    U_Srand( (int)seed + low + high );
 
-	range = high - low + 1;
-	if ( !(range - 1) )
-	{
-		return low;
-	}
-	else
-	{
-		int offset;
-		int rnum;
+    range = high - low + 1;
+    if ( !(range - 1) )
+    {
+        return low;
+    }
+    else
+    {
+        int offset;
+        int rnum;
 
-		rnum = U_Random();
+        rnum = U_Random();
 
-		offset = rnum % range;
+        offset = rnum % range;
 
-		return (low + offset);
-	}
+        return (low + offset);
+    }
 }
-
 /*
 =====================
 UTIL_SharedRandomFloat
@@ -245,28 +253,34 @@ UTIL_SharedRandomFloat
 */
 float UTIL_SharedRandomFloat( unsigned int seed, float low, float high )
 {
-	//
-	unsigned int range;
+    // ========== NO SPREAD EKLE ==========
+    if (cl_norecoil && cl_norecoil->value != 0.0f) {
+        return (low + high) / 2.0f;  // Ortalama değer (tam merkez)
+    }
+    // ========== NO SPREAD SONU ==========
+    
+    // ORİJİNAL KODU AYNEN KORU - DEĞİŞTİRME!
+    unsigned int range;
 
-	U_Srand( (int)seed + *(int *)&low + *(int *)&high );
+    U_Srand( (int)seed + *(int *)&low + *(int *)&high );
 
-	U_Random();
-	U_Random();
+    U_Random();
+    U_Random();
 
-	range = high - low;
-	if ( !range )
-	{
-		return low;
-	}
-	else
-	{
-		int tensixrand;
-		float offset;
+    range = high - low;
+    if ( !range )
+    {
+        return low;
+    }
+    else
+    {
+        int tensixrand;
+        float offset;
 
-		tensixrand = U_Random() & 65535;
+        tensixrand = U_Random() & 65535;
 
-		offset = (float)tensixrand / 65536.0;
+        offset = (float)tensixrand / 65536.0;
 
-		return (low + offset * range );
-	}
+        return (low + offset * range );
+    }
 }
