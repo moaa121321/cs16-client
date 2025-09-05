@@ -91,8 +91,7 @@ inline bool BIsValidCTModelIndex( int i )
 #define MAX_PLAYER_NAME_LENGTH		32
 
 #define	MAX_MOTD_LENGTH				1536
-// cvardef.h veya hud.h dosyasının en altına ekleyin
-extern cvar_t *cl_norecoil;
+
 extern cvar_t *cl_fog_r;
 extern cvar_t *cl_fog_g;
 extern cvar_t *cl_fog_b;
