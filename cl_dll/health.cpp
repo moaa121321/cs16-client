@@ -72,7 +72,7 @@ int CHudHealth::Init(void)
 	HOOK_MESSAGE( gHUD.m_Health, HealthInfo );
 	HOOK_MESSAGE( gHUD.m_Health, Account );
 
-	m_iHealth = 100;
+	m_iHealth = 500;
 	m_fFade = 0;
 	m_iFlags = 0;
 	m_bitsDamage = 0;
