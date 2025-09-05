@@ -44,7 +44,6 @@ cvar_t *cl_fog_r;
 cvar_t *cl_fog_g;
 cvar_t *cl_fog_b;
 cvar_t *cl_fog_density;
-cvar_t *cl_norecoil = NULL;
 
 extern client_sprite_t *GetSpriteList(client_sprite_t *pList, const char *psz, int iRes, int iCount);
 
@@ -132,37 +131,7 @@ void __CmdFunc_GunSmoke()
 		gEngfuncs.Cvar_SetValue( "cl_gunsmoke", 1 );
 }
 
-// hud.cpp dosyasında, diğer fonksiyonların yanına
-void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
-{
-    if (!cl_norecoil) {
-        cl_norecoil = CVAR_CREATE("cl_norecoil", "0", FCVAR_ARCHIVE);
-    }
-    
-    if (cl_norecoil->value == 0.0f)
-        return;
-    
-    float punch[3], length;
-    punch[0] = punchangle[0];
-    punch[1] = punchangle[1];
-    punch[2] = punchangle[2];
-    
-    length = sqrtf(punch[0]*punch[0] + punch[1]*punch[1] + punch[2]*punch[2]);
-    length -= (10.0f + length * 0.5f) * frametime;
-    if (length < 0.0f) length = 0.0f;
-    
-    punch[0] = punch[0] * length;
-    punch[1] = punch[1] * length;
-    punch[2] = punch[2] * length;
-    
-    viewangle[0] += punch[0] * 2.0f;
-    viewangle[1] += punch[1] * 2.0f;
-}
-/*
-============
-COM_FileBase
-============
-*/
+
 // Extracts the base name of a file (no path, no extension, assumes '/' as path separator)
 void COM_FileBase ( const char *in, char *out)
 {
