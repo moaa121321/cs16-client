@@ -363,22 +363,18 @@ void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
     if (!cl_norecoil || cl_norecoil->value == 0.0f)
         return;
     
-    static vec3_t originalViewangles;
-    static bool firstRun = true;
+    // ESKİ KOD - sadece geri tepmeyi azalt
+    float punch[3], length;
+    VectorCopy(punchangle, punch);
+    length = VectorLength(punch);
+    length -= (10.0f + length * 0.5f) * frametime;
+    length = max(length, 0.0f);
+    VectorScale(punch, length, punch);
     
-    if (firstRun) {
-        // İlk çalıştırmada orijinal view açılarını kaydet
-        VectorCopy(viewangle, originalViewangles);
-        firstRun = false;
-    }
-    
-    // Geri tepmeyi TAMAMEN sıfırla
-    punchangle[0] = 0.0f;
-    punchangle[1] = 0.0f;
-    punchangle[2] = 0.0f;
-    
-    // View açılarını orijinal değerlerinde sabit tut
-    VectorCopy(originalViewangles, viewangle);
+    // View açılarını DEĞİŞTİRME, sadece punchangle'ı güncelle
+    punchangle[0] = punch[0];
+    punchangle[1] = punch[1];
+    punchangle[2] = punch[2];
 }
 // ========== NORECOIL FONKSİYONU SONU ==========
 /*
