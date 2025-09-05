@@ -723,10 +723,8 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	{
 		VectorCopy ( pparams->cl_viewangles, pparams->viewangles );
 	}
-	// ========== NORECOIL UYGULAMA ==========
-	ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
-	// ========== NORECOIL UYGULAMA SONU ==========
-
+ ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
+	
 	gEngfuncs.V_CalcShake();
 	gEngfuncs.V_ApplyShake( pparams->vieworg, pparams->viewangles, 1.0 );
 
