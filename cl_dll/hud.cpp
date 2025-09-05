@@ -131,6 +131,44 @@ void __CmdFunc_GunSmoke()
 		gEngfuncs.Cvar_SetValue( "cl_gunsmoke", 1 );
 }
 
+// hud.cpp dosyasının üst kısmına, diğer cvar_t* tanımlamalarının yanına
+cvar_t *cl_norecoil = NULL;
+
+// Yardımcı fonksiyonlar
+namespace {
+    inline void NoRecoil_VectorCopy(const float *src, float *dst) {
+        dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2];
+    }
+    
+    inline float NoRecoil_VectorLength(const float *v) {
+        return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+    }
+    
+    inline void NoRecoil_VectorScale(const float *in, float scale, float *out) {
+        out[0] = in[0] * scale; out[1] = in[1] * scale; out[2] = in[2] * scale;
+    }
+    
+    inline float NoRecoil_max(float a, float b) {
+        return a > b ? a : b;
+    }
+    
+    void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle) {
+        if (!cl_norecoil || cl_norecoil->value == 0.0f)
+            return;
+        
+        float punch[3], length;
+        NoRecoil_VectorCopy(punchangle, punch);
+        length = NoRecoil_VectorLength(punch);
+        length -= (10.0f + length * 0.5f) * frametime;
+        length = NoRecoil_max(length, 0.0f);
+        NoRecoil_VectorScale(punch, length, punch);
+        viewangle[0] += punch[0] * 2.0f;
+        viewangle[1] += punch[1] * 2.0f;
+    }
+}
+
+//norec
+
 /*
 ============
 COM_FileBase
@@ -282,6 +320,8 @@ void CHud :: Init( void )
 	HOOK_MESSAGE( gHUD, Fog );
 
 
+	// CVAR_CREATE çağrılarının yapıldığı yere şunu ekleyin:
+    cl_norecoil = CVAR_CREATE("cl_norecoil", "0", FCVAR_ARCHIVE);
 	CVAR_CREATE( "_vgui_menus", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );
 	CVAR_CREATE( "_cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );
 	CVAR_CREATE( "_ah", "0", FCVAR_ARCHIVE | FCVAR_USERINFO );
