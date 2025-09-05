@@ -523,7 +523,9 @@ Vector CBaseEntity::FireBullets3 ( Vector vecSrc, Vector vecDirShooting, float f
 {
     // ========== NO SPREAD EKLE ==========
     if (cl_norecoil && cl_norecoil->value != 0.0f) {
-        return Vector(0.0f, 0.0f, 0.0f);  // TAM MERKEZ!
+        // Tüm spread kaynaklarını sıfırla
+        flSpread = 0.001f;
+        return g_vecZero;
     }
     // ========== NO SPREAD SONU ==========
     
@@ -531,18 +533,31 @@ Vector CBaseEntity::FireBullets3 ( Vector vecSrc, Vector vecDirShooting, float f
 
     if ( pevAttacker )
     {
-        x = UTIL_SharedRandomFloat(shared_rand, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 1, -0.5, 0.5);
-        y = UTIL_SharedRandomFloat(shared_rand + 2, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 3, -0.5, 0.5);
+        // Spread aktifse normal, değilse sıfır
+        if (cl_norecoil && cl_norecoil->value != 0.0f) {
+            x = 0.0f;
+            y = 0.0f;
+        } else {
+            x = UTIL_SharedRandomFloat(shared_rand, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 1, -0.5, 0.5);
+            y = UTIL_SharedRandomFloat(shared_rand + 2, -0.5, 0.5) + UTIL_SharedRandomFloat(shared_rand + 3, -0.5, 0.5);
+        }
     }
     else
     {
-        do
-        {
-            x = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
-            y = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
-            z = x * x + y * y;
+        // Spread aktifse normal, değilse sıfır
+        if (cl_norecoil && cl_norecoil->value != 0.0f) {
+            x = 0.0f;
+            y = 0.0f;
+            z = 0.0f;
+        } else {
+            do
+            {
+                x = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
+                y = RANDOM_FLOAT(-0.5, 0.5) + RANDOM_FLOAT(-0.5, 0.5);
+                z = x * x + y * y;
+            }
+            while (z > 1);
         }
-        while (z > 1);
     }
 
     return Vector(x * flSpread, y * flSpread, 0.0f);
