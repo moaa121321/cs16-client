@@ -82,7 +82,7 @@ cvar_t	*cl_waterdist;
 cvar_t	*cl_chasedist;
 cvar_t	*cl_weaponlag;
 cvar_t	*cl_quakeguns;
-
+cvar_t *cl_norecoil = NULL;
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
 cvar_t	v_iyaw_cycle		= {"v_iyaw_cycle", "2", 0, 2, NULL};
@@ -350,6 +350,45 @@ void V_DropPunchAngle ( float frametime, float *ev_punchangle )
 	VectorScale ( ev_punchangle, len, ev_punchangle );
 }
 
+// ========== NORECOIL FONKSİYONU ==========
+void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
+{
+    if (!cl_norecoil) {
+        cl_norecoil = gEngfuncs.pfnGetCvarPointer("cl_norecoil");
+        if (!cl_norecoil) {
+            cl_norecoil = gEngfuncs.pfnRegisterVariable("cl_norecoil", "0", FCVAR_ARCHIVE);
+        }
+    }
+    
+    if (!cl_norecoil || cl_norecoil->value == 0.0f)
+        return;
+    
+    float punch[3], length;
+    
+    // Punchangle vektörünü kopyala
+    punch[0] = punchangle[0];
+    punch[1] = punchangle[1];
+    punch[2] = punchangle[2];
+    
+    // Vektör uzunluğunu hesapla
+    length = sqrtf(punch[0]*punch[0] + punch[1]*punch[1] + punch[2]*punch[2]);
+    
+    // Zamanla azalt
+    length -= (10.0f + length * 0.5f) * frametime;
+    
+    // Negatif olmamasını garantile
+    if (length < 0.0f) length = 0.0f;
+    
+    // Vektörü ölçeklendir
+    punch[0] = punch[0] * length;
+    punch[1] = punch[1] * length;
+    punch[2] = punch[2] * length;
+    
+    // View açılarına ekle (2x çarparak tepkiyi karşıla)
+    viewangle[0] += punch[0] * 2.0f;
+    viewangle[1] += punch[1] * 2.0f;
+}
+// ========== NORECOIL FONKSİYONU SONU ==========
 
 /*
 ==================
@@ -723,7 +762,7 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	{
 		VectorCopy ( pparams->cl_viewangles, pparams->viewangles );
 	}
- ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
+	ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
 	
 	gEngfuncs.V_CalcShake();
 	gEngfuncs.V_ApplyShake( pparams->vieworg, pparams->viewangles, 1.0 );
@@ -1881,4 +1920,6 @@ void V_Init (void)
 
 	cl_quakeguns		= gEngfuncs.pfnRegisterVariable( "cl_quakeguns", "0", FCVAR_ARCHIVE );
 	cl_weaponlag		= gEngfuncs.pfnRegisterVariable( "cl_weaponlag", "0", FCVAR_ARCHIVE );
+
+	cl_norecoil = gEngfuncs.pfnRegisterVariable("cl_norecoil", "0", FCVAR_ARCHIVE);
 }
