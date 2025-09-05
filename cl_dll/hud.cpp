@@ -279,7 +279,6 @@ void CHud :: Init( void )
 
 
 	// CVAR_CREATE çağrılarının yapıldığı yere şunu ekleyin:
-    cl_norecoil = CVAR_CREATE("cl_norecoil", "0", FCVAR_ARCHIVE);
 	CVAR_CREATE( "_vgui_menus", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );
 	CVAR_CREATE( "_cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );
 	CVAR_CREATE( "_ah", "0", FCVAR_ARCHIVE | FCVAR_USERINFO );
