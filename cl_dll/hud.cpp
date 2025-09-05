@@ -44,6 +44,7 @@ cvar_t *cl_fog_r;
 cvar_t *cl_fog_g;
 cvar_t *cl_fog_b;
 cvar_t *cl_fog_density;
+cvar_t *cl_norecoil = NULL;
 
 extern client_sprite_t *GetSpriteList(client_sprite_t *pList, const char *psz, int iRes, int iCount);
 
@@ -131,44 +132,32 @@ void __CmdFunc_GunSmoke()
 		gEngfuncs.Cvar_SetValue( "cl_gunsmoke", 1 );
 }
 
-// hud.cpp dosyasının üst kısmına, diğer cvar_t* tanımlamalarının yanına
-cvar_t *cl_norecoil = NULL;
-
-// Yardımcı fonksiyonlar
-namespace {
-    inline void NoRecoil_VectorCopy(const float *src, float *dst) {
-        dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2];
+// hud.cpp dosyasında, diğer fonksiyonların yanına
+void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
+{
+    if (!cl_norecoil) {
+        cl_norecoil = CVAR_CREATE("cl_norecoil", "0", FCVAR_ARCHIVE);
     }
     
-    inline float NoRecoil_VectorLength(const float *v) {
-        return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-    }
+    if (cl_norecoil->value == 0.0f)
+        return;
     
-    inline void NoRecoil_VectorScale(const float *in, float scale, float *out) {
-        out[0] = in[0] * scale; out[1] = in[1] * scale; out[2] = in[2] * scale;
-    }
+    float punch[3], length;
+    punch[0] = punchangle[0];
+    punch[1] = punchangle[1];
+    punch[2] = punchangle[2];
     
-    inline float NoRecoil_max(float a, float b) {
-        return a > b ? a : b;
-    }
+    length = sqrtf(punch[0]*punch[0] + punch[1]*punch[1] + punch[2]*punch[2]);
+    length -= (10.0f + length * 0.5f) * frametime;
+    if (length < 0.0f) length = 0.0f;
     
-    void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle) {
-        if (!cl_norecoil || cl_norecoil->value == 0.0f)
-            return;
-        
-        float punch[3], length;
-        NoRecoil_VectorCopy(punchangle, punch);
-        length = NoRecoil_VectorLength(punch);
-        length -= (10.0f + length * 0.5f) * frametime;
-        length = NoRecoil_max(length, 0.0f);
-        NoRecoil_VectorScale(punch, length, punch);
-        viewangle[0] += punch[0] * 2.0f;
-        viewangle[1] += punch[1] * 2.0f;
-    }
+    punch[0] = punch[0] * length;
+    punch[1] = punch[1] * length;
+    punch[2] = punch[2] * length;
+    
+    viewangle[0] += punch[0] * 2.0f;
+    viewangle[1] += punch[1] * 2.0f;
 }
-
-//norec
-
 /*
 ============
 COM_FileBase
