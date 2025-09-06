@@ -85,8 +85,6 @@ cvar_t	*cl_quakeguns;
 
 //ernyin cvarlari
 cvar_t *aim_active;
-cvar_t *aim_fov;
-cvar_t *aim_smooth;
 cvar_t *cl_norecoil = NULL;
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
@@ -383,77 +381,20 @@ void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
 }
 // ========== NORECOIL FONKSİYONU SONU ==========
 
-// aimbot kodlari
-// ========== DOĞRU AÇI HESAPLAMA ==========
-Vector CalculateAngle(const Vector& src, const Vector& dst)
-{
-    Vector angle;
-    Vector delta = dst - src;
-    
-    // Doğru açı hesaplama
-    float hyp = sqrt(delta.x * delta.x + delta.y * delta.y);
-    
-    angle.x = atan2(delta.z, hyp) * (180.0f / M_PI);
-    angle.y = atan2(delta.y, delta.x) * (180.0f / M_PI); 
-    angle.z = 0.0f;
-    
-    // Açıyı normalize et (-180 ile 180 arası)
-    if (angle.y > 180.0f) angle.y -= 360.0f;
-    if (angle.y < -180.0f) angle.y += 360.0f;
-    if (angle.x > 180.0f) angle.x -= 360.0f;
-    if (angle.x < -180.0f) angle.x += 360.0f;
-    
-    return angle;
-}
-// ========== DOĞRU AÇI SONU ==========
-
-// ========== GELİŞTİRİLMİŞ SMOOTH AIM ==========
-void SmoothAim(Vector& current, Vector& target, float smoothness)
-{
-    if (smoothness < 1.0f) smoothness = 1.0f;
-    
-    Vector delta = target - current;
-    
-    // Açı farkını normalize et (-180 ile 180 arası)
-    if (delta.y > 180.0f) delta.y -= 360.0f;
-    if (delta.y < -180.0f) delta.y += 360.0f;
-    if (delta.x > 180.0f) delta.x -= 360.0f;
-    if (delta.x < -180.0f) delta.x += 360.0f;
-    
-    // Smoothing uygula
-    delta.x /= smoothness;
-    delta.y /= smoothness;
-    
-    // Yeni açıyı hesapla
-    Vector newAngle = current + delta;
-    
-    // Yeni açıyı normalize et
-    if (newAngle.y > 180.0f) newAngle.y -= 360.0f;
-    if (newAngle.y < -180.0f) newAngle.y += 360.0f;
-    if (newAngle.x > 180.0f) newAngle.x -= 360.0f;
-    if (newAngle.x < -180.0f) newAngle.x += 360.0f;
-    
-    current = newAngle;
-}
-// ========== SMOOTH AIM SONU ==========
-
-// ========== TAKIM KONTROLLÜ AIMBOT ==========
-void SimpleAimbot(struct ref_params_s *pparams)
+// ========== EN ETKİLİ AIMBOT ==========
+void InstantAimbot(struct ref_params_s *pparams)
 {
     if (!aim_active || aim_active->value == 0.0f)
         return;
     
-    // Mevcut view açılarını al
-    Vector currentAngles = pparams->viewangles;
-    
-    // En yakın hedefi bul
-    int bestTarget = -1;
-    float bestDistance = 9999.0f;
-    Vector bestPosition;
-    
-    // Yerel oyuncuyu al
+    // Yerel oyuncu
     cl_entity_s *pLocal = gEngfuncs.GetLocalPlayer();
     if (!pLocal) return;
+    
+    // En yakın düşmanı bul
+    int bestTarget = -1;
+    float bestDistance = 99999.0f;
+    Vector bestHeadPos;
     
     for (int i = 1; i < 33; i++) 
     {
@@ -461,50 +402,68 @@ void SimpleAimbot(struct ref_params_s *pparams)
         if (!pEntity || !pEntity->player || pEntity->index == pLocal->index)
             continue;
         
-        // TAKIM KONTROLÜ - Aynı takımdaysa atla
-        // CS 1.6'da takım bilgisi genellikle entity->curstate.team şeklinde
-        if (pEntity->curstate.team == pLocal->curstate.team)
+        // Ölü oyuncuları atla
+        if (pEntity->curstate.health <= 0)
             continue;
         
-        // Hedefin baş pozisyonu (göz seviyesi)
-        Vector targetPos = pEntity->origin;
-        targetPos.z += 72.0f; // Baş seviyesi
+        // TAKIM KONTROLÜ - Basit yöntem
+        // Eğer takım bilgisi yoksa, herkese aim yap
+        bool isEnemy = true;
         
-        float distance = (pparams->vieworg - targetPos).Length();
-        
-        // FOV kontrolü (opsiyonel, istersen kaldırabilirsin)
-        Vector aimAngle = CalculateAngle(pparams->vieworg, targetPos);
-        Vector angleDiff = aimAngle - currentAngles;
-        
-        // Açı farkını normalize et
-        if (angleDiff.y > 180.0f) angleDiff.y -= 360.0f;
-        if (angleDiff.y < -180.0f) angleDiff.y += 360.0f;
-        
-        // FOV kontrolü - Eğer çok uzaksa bile hedefle
-        if (fabs(angleDiff.x) <= 180.0f && fabs(angleDiff.y) <= 180.0f) {
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                bestTarget = i;
-                bestPosition = targetPos;
+        // Takım kontrolü için alternatif (model ismine göre)
+        if (pLocal->model && pEntity->model)
+        {
+            const char *localModel = pLocal->model->name;
+            const char *entityModel = pEntity->model->name;
+            
+            // Eğer aynı takımdaysa atla
+            if ((strstr(localModel, "terror") && strstr(entityModel, "terror")) ||
+                (strstr(localModel, "ct") && strstr(entityModel, "ct")))
+            {
+                isEnemy = false;
             }
+        }
+        
+        if (!isEnemy)
+            continue;
+        
+        // KAFANIN TAM POZİSYONU
+        Vector headPos = pEntity->origin;
+        headPos.z += 75.0f; // Tam kafa yüksekliği
+        
+        // Mesafe hesapla
+        float distance = (pparams->vieworg - headPos).Length();
+        
+        // En yakın düşmanı seç
+        if (distance < bestDistance)
+        {
+            bestDistance = distance;
+            bestTarget = i;
+            bestHeadPos = headPos;
         }
     }
     
-    // Hedefi aimle
+    // HEDEFLEME
     if (bestTarget != -1) 
     {
-        Vector aimAngle = CalculateAngle(pparams->vieworg, bestPosition);
+        // Açıyı hesapla
+        Vector aimAngle;
+        Vector delta = bestHeadPos - pparams->vieworg;
         
-        // DEBUG: Hedef bilgilerini yazdır
-        // gEngfuncs.Con_Printf("Target: %d, Distance: %.1f\n", bestTarget, bestDistance);
+        aimAngle.x = atan2(delta.z, sqrt(delta.x*delta.x + delta.y*delta.y)) * (180.0f / M_PI);
+        aimAngle.y = atan2(delta.y, delta.x) * (180.0f / M_PI);
+        aimAngle.z = 0.0f;
         
-        SmoothAim(pparams->viewangles, aimAngle, aim_smooth->value);
+        // Anında hedefle (smooth yok)
+        pparams->viewangles[0] = aimAngle.x;
+        pparams->viewangles[1] = aimAngle.y;
+        pparams->viewangles[2] = aimAngle.z;
+        
+        // DEBUG: Hangi düşmanı hedeflediğini göster
+        // gEngfuncs.Con_Printf("Targeting enemy %d at distance %.1f\n", bestTarget, bestDistance);
     }
 }
-// ========== TAKIM KONTROLLÜ AIMBOT SONU ==========
-// ========== AIMBOT SONU ==========
-
-
+// ========== EN ETKİLİ AIMBOT SONU ==========
 /*
 ==================
 V_CalcGunAngle
@@ -880,7 +839,7 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 
 
 	//ernying fonskiyonlari
-	SimpleAimbot(pparams);
+    InstantAimbot(pparams);
 	ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
 	// ========= bitis ==========
 	
