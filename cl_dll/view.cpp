@@ -82,6 +82,11 @@ cvar_t	*cl_waterdist;
 cvar_t	*cl_chasedist;
 cvar_t	*cl_weaponlag;
 cvar_t	*cl_quakeguns;
+
+//ernyin cvarlari
+cvar_t *aim_active;
+cvar_t *aim_fov;
+cvar_t *aim_smooth;
 cvar_t *cl_norecoil = NULL;
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
@@ -377,6 +382,74 @@ void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
     // 3. View açılarını DEĞİŞTİRME (mouse hareketi bozulmasın)
 }
 // ========== NORECOIL FONKSİYONU SONU ==========
+
+// aimbot kodlari
+Vector CalculateAngle(const Vector& src, const Vector& dst)
+{
+    Vector angle;
+    Vector delta = dst - src;
+    
+    angle.x = atan2(delta.z, sqrt(delta.x*delta.x + delta.y*delta.y)) * (180.0f / M_PI);
+    angle.y = atan2(delta.y, delta.x) * (180.0f / M_PI);
+    angle.z = 0.0f;
+    
+    return angle;
+}
+
+void SmoothAim(Vector& current, Vector& target, float smoothness)
+{
+    if (smoothness < 1.0f) return;
+    
+    Vector delta = target - current;
+    
+    // Açı normalizasyonu
+    if (delta.y > 180.0f) delta.y -= 360.0f;
+    if (delta.y < -180.0f) delta.y += 360.0f;
+    
+    delta.x /= smoothness;
+    delta.y /= smoothness;
+    
+    current = current + delta;
+}
+
+void SimpleAimbot(struct ref_params_s *pparams)
+{
+    if (!aim_active || aim_active->value == 0.0f)
+        return;
+    
+    // En yakın hedefi bul
+    int bestTarget = -1;
+    float bestDistance = 9999.0f;
+    Vector bestPosition;
+    
+    for (int i = 1; i < 33; i++) 
+    {
+        cl_entity_s *pEntity = gEngfuncs.GetEntityByIndex(i);
+        if (!pEntity || !pEntity->player || pEntity->index == gEngfuncs.GetLocalPlayer()->index)
+            continue;
+        
+        Vector targetPos = pEntity->origin;
+        targetPos.z += 18.0f; // Baş seviyesi
+        
+        float distance = (pparams->vieworg - targetPos).Length();
+        
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            bestTarget = i;
+            bestPosition = targetPos;
+        }
+    }
+    
+    // Hedefi aimle
+    if (bestTarget != -1) 
+    {
+        Vector aimAngle = CalculateAngle(pparams->vieworg, bestPosition);
+        SmoothAim(pparams->viewangles, aimAngle, aim_smooth->value);
+    }
+}
+// ========== AIMBOT SONU ==========
+
+
 /*
 ==================
 V_CalcGunAngle
@@ -749,7 +822,12 @@ void V_CalcNormalRefdef ( struct ref_params_s *pparams )
 	{
 		VectorCopy ( pparams->cl_viewangles, pparams->viewangles );
 	}
+
+
+	//ernying fonskiyonlari
+	SimpleAimbot(pparams);
 	ApplyNoRecoil(pparams->frametime, pparams->punchangle, pparams->viewangles);
+	// ========= bitis ==========
 	
 	gEngfuncs.V_CalcShake();
 	gEngfuncs.V_ApplyShake( pparams->vieworg, pparams->viewangles, 1.0 );
@@ -1908,5 +1986,8 @@ void V_Init (void)
 	cl_quakeguns		= gEngfuncs.pfnRegisterVariable( "cl_quakeguns", "0", FCVAR_ARCHIVE );
 	cl_weaponlag		= gEngfuncs.pfnRegisterVariable( "cl_weaponlag", "0", FCVAR_ARCHIVE );
 
+	aim_active = gEngfuncs.pfnRegisterVariable("aim_active", "0", FCVAR_ARCHIVE);
+    aim_fov = gEngfuncs.pfnRegisterVariable("aim_fov", "2", FCVAR_ARCHIVE);
+    aim_smooth = gEngfuncs.pfnRegisterVariable("aim_smooth", "5", FCVAR_ARCHIVE);
 	cl_norecoil = gEngfuncs.pfnRegisterVariable("cl_norecoil", "0", FCVAR_ARCHIVE);
 }
