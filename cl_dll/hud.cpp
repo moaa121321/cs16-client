@@ -312,6 +312,11 @@ void CHud :: Init( void )
 	cl_charset = gEngfuncs.pfnGetCvarPointer( "cl_charset" );
 	con_charset = gEngfuncs.pfnGetCvarPointer( "con_charset" );
 
+
+	// hud.cpp veya client.cpp içinde V_Init veya HUD_Init fonksiyonuna ekle:
+    cl_nospread = gEngfuncs.pfnRegisterVariable("cl_nospread", "0", FCVAR_ARCHIVE);
+
+	
 	m_pShowHealth = CVAR_CREATE( "scoreboard_showhealth", "1", FCVAR_ARCHIVE );
 	m_pShowMoney = CVAR_CREATE( "scoreboard_showmoney", "1", FCVAR_ARCHIVE );
 
