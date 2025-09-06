@@ -42,8 +42,18 @@
 #define CHudMsgFunc(x) int MsgFunc_##x(const char *pszName, int iSize, void *buf)
 #define CHudUserCmd(x) void UserCmd_##x()
 
-extern cvar_t *cl_esp;
-void DrawESP();
+class CHud {
+public:
+	// ... diğer methodlar ...
+	
+	// ESP için yeni methodlar
+	void DrawESP();
+	void DrawPlayerESP(cl_entity_t* pPlayer);
+	
+	// Public değişken
+	cvar_t *cl_esp;
+};
+
 void DrawPlayerESP(cl_entity_t* pPlayer);
 
 class RGBA
