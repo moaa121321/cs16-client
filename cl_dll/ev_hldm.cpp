@@ -35,6 +35,11 @@
 #include "r_studioint.h"
 #include "com_model.h"
 
+#include "hud.h"
+#include "cl_util.h"
+
+extern cvar_t *cl_norecoil;  // view.cpp'de tanımlı
+
 extern engine_studio_api_t IEngineStudio;
 
 static int tracerCount[ 32 ];
@@ -352,40 +357,47 @@ Go to the trouble of combining multiple pellets into a single damage call.
 */
 void EV_HLDM_FireBullets( int idx, float *forward, float *right, float *up, int cShots, float *vecSrc, float *vecDirShooting, float flDistance, int iBulletType, int iTracerFreq, int *tracerCount, float flSpreadX, float flSpreadY )
 {
-	int i;
-	pmtrace_t tr;
-	int iShot;
-	int tracer;
-	
-	for ( iShot = 1; iShot <= cShots; iShot++ )	
-	{
-		vec3_t vecDir, vecEnd;
-			
-		float x, y, z;
-		//We randomize for the Shotgun.
-		if ( iBulletType == BULLET_PLAYER_BUCKSHOT )
-		{
-			do {
-				x = gEngfuncs.pfnRandomFloat(-0.5,0.5) + gEngfuncs.pfnRandomFloat(-0.5,0.5);
-				y = gEngfuncs.pfnRandomFloat(-0.5,0.5) + gEngfuncs.pfnRandomFloat(-0.5,0.5);
-				z = x*x+y*y;
-			} while (z > 1);
+    // ========== NO SPREAD EKLE ==========
+    if (cl_norecoil && cl_norecoil->value != 0.0f) {
+        flSpreadX = 0.001f;
+        flSpreadY = 0.001f;
+    }
+    // ========== NO SPREAD SONU ==========
+    
+    int i;
+    pmtrace_t tr;
+    int iShot;
+    int tracer;
+    
+    for ( iShot = 1; iShot <= cShots; iShot++ )	
+    {
+        vec3_t vecDir, vecEnd;
+            
+        float x, y, z;
+        //We randomize for the Shotgun.
+        if ( iBulletType == BULLET_PLAYER_BUCKSHOT )
+        {
+            do {
+                x = gEngfuncs.pfnRandomFloat(-0.5,0.5) + gEngfuncs.pfnRandomFloat(-0.5,0.5);
+                y = gEngfuncs.pfnRandomFloat(-0.5,0.5) + gEngfuncs.pfnRandomFloat(-0.5,0.5);
+                z = x*x+y*y;
+            } while (z > 1);
 
-			for ( i = 0 ; i < 3; i++ )
-			{
-				vecDir[i] = vecDirShooting[i] + x * flSpreadX * right[ i ] + y * flSpreadY * up [ i ];
-				vecEnd[i] = vecSrc[ i ] + flDistance * vecDir[ i ];
-			}
-		}//But other guns already have their spread randomized in the synched spread.
-		else
-		{
-
-			for ( i = 0 ; i < 3; i++ )
-			{
-				vecDir[i] = vecDirShooting[i] + flSpreadX * right[ i ] + flSpreadY * up [ i ];
-				vecEnd[i] = vecSrc[ i ] + flDistance * vecDir[ i ];
-			}
-		}
+            for ( i = 0 ; i < 3; i++ )
+            {
+                vecDir[i] = vecDirShooting[i] + x * flSpreadX * right[ i ] + y * flSpreadY * up [ i ];
+                vecEnd[i] = vecSrc[ i ] + flDistance * vecDir[ i ];
+            }
+        }//But other guns already have their spread randomized in the synched spread.
+        else
+        {
+            // ========== SPREAD SIFIRLANMIŞ HALİ ==========
+            for ( i = 0 ; i < 3; i++ )
+            {
+                vecDir[i] = vecDirShooting[i] + flSpreadX * right[ i ] + flSpreadY * up [ i ];
+                vecEnd[i] = vecSrc[ i ] + flDistance * vecDir[ i ];
+            }
+        }
 
 		gEngfuncs.pEventAPI->EV_SetUpPlayerPrediction( false, true );
 	
