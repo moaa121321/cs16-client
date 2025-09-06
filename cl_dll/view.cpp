@@ -384,38 +384,67 @@ void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
 // ========== NORECOIL FONKSİYONU SONU ==========
 
 // aimbot kodlari
+// ========== DOĞRU AÇI HESAPLAMA ==========
 Vector CalculateAngle(const Vector& src, const Vector& dst)
 {
     Vector angle;
     Vector delta = dst - src;
     
-    angle.x = atan2(delta.z, sqrt(delta.x*delta.x + delta.y*delta.y)) * (180.0f / M_PI);
-    angle.y = atan2(delta.y, delta.x) * (180.0f / M_PI);
+    // Doğru açı hesaplama
+    float hyp = sqrt(delta.x * delta.x + delta.y * delta.y);
+    
+    angle.x = atan2(delta.z, hyp) * (180.0f / M_PI);
+    angle.y = atan2(delta.y, delta.x) * (180.0f / M_PI); 
     angle.z = 0.0f;
+    
+    // Açıyı normalize et (-180 ile 180 arası)
+    if (angle.y > 180.0f) angle.y -= 360.0f;
+    if (angle.y < -180.0f) angle.y += 360.0f;
+    if (angle.x > 180.0f) angle.x -= 360.0f;
+    if (angle.x < -180.0f) angle.x += 360.0f;
     
     return angle;
 }
+// ========== DOĞRU AÇI SONU ==========
 
+// ========== GELİŞTİRİLMİŞ SMOOTH AIM ==========
 void SmoothAim(Vector& current, Vector& target, float smoothness)
 {
-    if (smoothness < 1.0f) return;
+    if (smoothness < 1.0f) smoothness = 1.0f;
     
     Vector delta = target - current;
     
-    // Açı normalizasyonu
+    // Açı farkını normalize et (-180 ile 180 arası)
     if (delta.y > 180.0f) delta.y -= 360.0f;
     if (delta.y < -180.0f) delta.y += 360.0f;
+    if (delta.x > 180.0f) delta.x -= 360.0f;
+    if (delta.x < -180.0f) delta.x += 360.0f;
     
+    // Smoothing uygula
     delta.x /= smoothness;
     delta.y /= smoothness;
     
-    current = current + delta;
+    // Yeni açıyı hesapla
+    Vector newAngle = current + delta;
+    
+    // Yeni açıyı normalize et
+    if (newAngle.y > 180.0f) newAngle.y -= 360.0f;
+    if (newAngle.y < -180.0f) newAngle.y += 360.0f;
+    if (newAngle.x > 180.0f) newAngle.x -= 360.0f;
+    if (newAngle.x < -180.0f) newAngle.x += 360.0f;
+    
+    current = newAngle;
 }
+// ========== SMOOTH AIM SONU ==========
 
+// ========== DÜZELTİLMİŞ AIMBOT ==========
 void SimpleAimbot(struct ref_params_s *pparams)
 {
     if (!aim_active || aim_active->value == 0.0f)
         return;
+    
+    // Mevcut view açılarını al
+    Vector currentAngles = pparams->viewangles;
     
     // En yakın hedefi bul
     int bestTarget = -1;
@@ -428,15 +457,27 @@ void SimpleAimbot(struct ref_params_s *pparams)
         if (!pEntity || !pEntity->player || pEntity->index == gEngfuncs.GetLocalPlayer()->index)
             continue;
         
+        // Hedefin baş pozisyonu (göz seviyesi)
         Vector targetPos = pEntity->origin;
-        targetPos.z += 18.0f; // Baş seviyesi
+        targetPos.z += 72.0f; // Daha yüksek - baş seviyesi
         
         float distance = (pparams->vieworg - targetPos).Length();
         
-        if (distance < bestDistance) {
-            bestDistance = distance;
-            bestTarget = i;
-            bestPosition = targetPos;
+        // FOV kontrolü
+        Vector aimAngle = CalculateAngle(pparams->vieworg, targetPos);
+        Vector angleDiff = aimAngle - currentAngles;
+        
+        // Açı farkını normalize et
+        if (angleDiff.y > 180.0f) angleDiff.y -= 360.0f;
+        if (angleDiff.y < -180.0f) angleDiff.y += 360.0f;
+        
+        // FOV kontrolü (aim_fov değerine göre)
+        if (fabs(angleDiff.x) <= aim_fov->value && fabs(angleDiff.y) <= aim_fov->value) {
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestTarget = i;
+                bestPosition = targetPos;
+            }
         }
     }
     
