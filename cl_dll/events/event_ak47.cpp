@@ -25,8 +25,13 @@
 *    version.
 *
 */
+#include "hud.h"
+#include "cl_util.h"
+#include "view.h"
 #include "events.h"
 #include "wpn_shared.h"
+
+extern cvar_t *cl_norecoil;  // view.cpp'de tanımlı
 
 static const char *SOUNDS_NAME[] =
 {
@@ -77,9 +82,17 @@ void EV_FireAK47( event_args_t *args )
 	VectorCopy( forward, vecAiming );
 
 	Vector vSpread( args->fparam1, args->fparam2, 0.0f );
-	EV_HLDM_FireBullets( idx,
-		forward, right,	up,
-		1, vecSrc, vecAiming,
-		vSpread, 8192.0, BULLET_PLAYER_762MM,
-		2 );
+    
+    // ========== NORECOIL AKTİFSE SPREAD SIFIRLA ==========
+    if (cl_norecoil && cl_norecoil->value != 0.0f) {
+        vSpread.x = 0.001f;  // Neredeyse sıfır
+        vSpread.y = 0.001f;  // Neredeyse sıfır
+    }
+    // ========== NO SPREAD SONU ==========
+    
+    EV_HLDM_FireBullets( idx,
+        forward, right, up,
+        1, vecSrc, vecAiming,
+        vSpread, 8192.0, BULLET_PLAYER_762MM,
+        2 );
 }
