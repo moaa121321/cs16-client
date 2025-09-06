@@ -35,7 +35,7 @@
 #include "r_studioint.h"
 #include "com_model.h"
 
-extern cvar_t *cl_norecoil;  // view.cpp'de tanımlı
+cvar_t *cl_nospread = NULL;
 
 extern engine_studio_api_t IEngineStudio;
 
@@ -354,12 +354,19 @@ Go to the trouble of combining multiple pellets into a single damage call.
 */
 void EV_HLDM_FireBullets( int idx, float *forward, float *right, float *up, int cShots, float *vecSrc, float *vecDirShooting, float flDistance, int iBulletType, int iTracerFreq, int *tracerCount, float flSpreadX, float flSpreadY )
 {
-    // ========== NO SPREAD EKLE ==========
-    if (cl_norecoil && cl_norecoil->value != 0.0f) {
-        flSpreadX = 0.001f;
-        flSpreadY = 0.001f;
+    // ========== İLK ÇAĞRIDA CVAR KAYDET ==========
+    static bool firstRun = true;
+    if (firstRun) {
+        cl_nospread = gEngfuncs.pfnRegisterVariable("cl_nospread", "0", FCVAR_ARCHIVE);
+        firstRun = false;
     }
-    // ========== NO SPREAD SONU ==========
+    // ========== CVAR KAYIT SONU ==========
+    
+    // ========== NO SPREAD EKLE ==========
+    if (cl_nospread && cl_nospread->value != 0.0f) {
+        flSpreadX = 0.0f;  // TAM SIFIR
+        flSpreadY = 0.0f;  // TAM SIFIR
+    }
     
     int i;
     pmtrace_t tr;
