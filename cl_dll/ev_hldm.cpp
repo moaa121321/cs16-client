@@ -35,9 +35,6 @@
 #include "r_studioint.h"
 #include "com_model.h"
 
-#include "hud.h"
-#include "cl_util.h"
-
 extern cvar_t *cl_norecoil;  // view.cpp'de tanımlı
 
 extern engine_studio_api_t IEngineStudio;
