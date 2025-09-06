@@ -437,7 +437,7 @@ void SmoothAim(Vector& current, Vector& target, float smoothness)
 }
 // ========== SMOOTH AIM SONU ==========
 
-// ========== DÜZELTİLMİŞ AIMBOT ==========
+// ========== TAKIM KONTROLLÜ AIMBOT ==========
 void SimpleAimbot(struct ref_params_s *pparams)
 {
     if (!aim_active || aim_active->value == 0.0f)
@@ -451,19 +451,28 @@ void SimpleAimbot(struct ref_params_s *pparams)
     float bestDistance = 9999.0f;
     Vector bestPosition;
     
+    // Yerel oyuncuyu al
+    cl_entity_s *pLocal = gEngfuncs.GetLocalPlayer();
+    if (!pLocal) return;
+    
     for (int i = 1; i < 33; i++) 
     {
         cl_entity_s *pEntity = gEngfuncs.GetEntityByIndex(i);
-        if (!pEntity || !pEntity->player || pEntity->index == gEngfuncs.GetLocalPlayer()->index)
+        if (!pEntity || !pEntity->player || pEntity->index == pLocal->index)
+            continue;
+        
+        // TAKIM KONTROLÜ - Aynı takımdaysa atla
+        // CS 1.6'da takım bilgisi genellikle entity->curstate.team şeklinde
+        if (pEntity->curstate.team == pLocal->curstate.team)
             continue;
         
         // Hedefin baş pozisyonu (göz seviyesi)
         Vector targetPos = pEntity->origin;
-        targetPos.z += 72.0f; // Daha yüksek - baş seviyesi
+        targetPos.z += 72.0f; // Baş seviyesi
         
         float distance = (pparams->vieworg - targetPos).Length();
         
-        // FOV kontrolü
+        // FOV kontrolü (opsiyonel, istersen kaldırabilirsin)
         Vector aimAngle = CalculateAngle(pparams->vieworg, targetPos);
         Vector angleDiff = aimAngle - currentAngles;
         
@@ -471,8 +480,8 @@ void SimpleAimbot(struct ref_params_s *pparams)
         if (angleDiff.y > 180.0f) angleDiff.y -= 360.0f;
         if (angleDiff.y < -180.0f) angleDiff.y += 360.0f;
         
-        // FOV kontrolü (aim_fov değerine göre)
-        if (fabs(angleDiff.x) <= aim_fov->value && fabs(angleDiff.y) <= aim_fov->value) {
+        // FOV kontrolü - Eğer çok uzaksa bile hedefle
+        if (fabs(angleDiff.x) <= 180.0f && fabs(angleDiff.y) <= 180.0f) {
             if (distance < bestDistance) {
                 bestDistance = distance;
                 bestTarget = i;
@@ -485,9 +494,14 @@ void SimpleAimbot(struct ref_params_s *pparams)
     if (bestTarget != -1) 
     {
         Vector aimAngle = CalculateAngle(pparams->vieworg, bestPosition);
+        
+        // DEBUG: Hedef bilgilerini yazdır
+        // gEngfuncs.Con_Printf("Target: %d, Distance: %.1f\n", bestTarget, bestDistance);
+        
         SmoothAim(pparams->viewangles, aimAngle, aim_smooth->value);
     }
 }
+// ========== TAKIM KONTROLLÜ AIMBOT SONU ==========
 // ========== AIMBOT SONU ==========
 
 
