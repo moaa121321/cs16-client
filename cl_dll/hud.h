@@ -42,6 +42,10 @@
 #define CHudMsgFunc(x) int MsgFunc_##x(const char *pszName, int iSize, void *buf)
 #define CHudUserCmd(x) void UserCmd_##x()
 
+extern cvar_t *cl_esp;
+void DrawESP();
+void DrawPlayerESP(cl_entity_t* pPlayer);
+
 class RGBA
 {
 public:
