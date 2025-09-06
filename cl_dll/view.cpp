@@ -84,7 +84,7 @@ cvar_t	*cl_weaponlag;
 cvar_t	*cl_quakeguns;
 
 //ernyin cvarlari
-cvar_t *aim_active;
+cvar_t *cl_aim;
 cvar_t *cl_norecoil = NULL;
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
@@ -384,7 +384,7 @@ void ApplyNoRecoil(float frametime, float *punchangle, float *viewangle)
 // ========== EN ETKİLİ AIMBOT ==========
 void InstantAimbot(struct ref_params_s *pparams)
 {
-    if (!aim_active || aim_active->value == 0.0f)
+    if (!cl_aim || cl_aim->value == 0.0f)
         return;
     
     // Yerel oyuncu
@@ -2000,8 +2000,7 @@ void V_Init (void)
 	cl_quakeguns		= gEngfuncs.pfnRegisterVariable( "cl_quakeguns", "0", FCVAR_ARCHIVE );
 	cl_weaponlag		= gEngfuncs.pfnRegisterVariable( "cl_weaponlag", "0", FCVAR_ARCHIVE );
 
-	aim_active = gEngfuncs.pfnRegisterVariable("aim_active", "0", FCVAR_ARCHIVE);
-    aim_fov = gEngfuncs.pfnRegisterVariable("aim_fov", "2", FCVAR_ARCHIVE);
-    aim_smooth = gEngfuncs.pfnRegisterVariable("aim_smooth", "5", FCVAR_ARCHIVE);
+	cl_aim = gEngfuncs.pfnRegisterVariable("cl_aim", "0", FCVAR_ARCHIVE);
+	
 	cl_norecoil = gEngfuncs.pfnRegisterVariable("cl_norecoil", "0", FCVAR_ARCHIVE);
 }
