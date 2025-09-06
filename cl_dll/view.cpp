@@ -86,6 +86,7 @@ cvar_t	*cl_quakeguns;
 //ernyin cvarlari
 cvar_t *cl_aim;
 cvar_t *cl_norecoil = NULL;
+cvar_t *cl_nospread = NULL;
 // These cvars are not registered (so users can't cheat), so set the ->value field directly
 // Register these cvars in V_Init() if needed for easy tweaking
 cvar_t	v_iyaw_cycle		= {"v_iyaw_cycle", "2", 0, 2, NULL};
@@ -2001,6 +2002,7 @@ void V_Init (void)
 	cl_weaponlag		= gEngfuncs.pfnRegisterVariable( "cl_weaponlag", "0", FCVAR_ARCHIVE );
 
 	cl_aim = gEngfuncs.pfnRegisterVariable("cl_aim", "0", FCVAR_ARCHIVE);
-	
+		// hud.cpp veya client.cpp içinde V_Init veya HUD_Init fonksiyonuna ekle:
+    cl_nospread = gEngfuncs.pfnRegisterVariable("cl_nospread", "0", FCVAR_ARCHIVE);
 	cl_norecoil = gEngfuncs.pfnRegisterVariable("cl_norecoil", "0", FCVAR_ARCHIVE);
 }
