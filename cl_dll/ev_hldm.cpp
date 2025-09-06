@@ -35,8 +35,6 @@
 #include "r_studioint.h"
 #include "com_model.h"
 
-cvar_t *cl_nospread = NULL;
-
 extern engine_studio_api_t IEngineStudio;
 
 static int tracerCount[ 32 ];
@@ -352,21 +350,30 @@ FireBullets
 Go to the trouble of combining multiple pellets into a single damage call.
 ================
 */
-void EV_HLDM_FireBullets( int idx, float *forward, float *right, float *up, int cShots, float *vecSrc, float *vecDirShooting, float flDistance, int iBulletType, int iTracerFreq, int *tracerCount, float flSpreadX, float flSpreadY )
+void EV_HLDM_FireBullets( ... )
 {
-    // ========== İLK ÇAĞRIDA CVAR KAYDET ==========
-    static bool firstRun = true;
-    if (firstRun) {
+    // ========== KESİN ÇÖZÜM ==========
+    static cvar_t *cl_nospread = NULL;
+    if (!cl_nospread) {
         cl_nospread = gEngfuncs.pfnRegisterVariable("cl_nospread", "0", FCVAR_ARCHIVE);
-        firstRun = false;
     }
-    // ========== CVAR KAYIT SONU ==========
     
-    // ========== NO SPREAD EKLE ==========
     if (cl_nospread && cl_nospread->value != 0.0f) {
-        flSpreadX = 0.0f;  // TAM SIFIR
-        flSpreadY = 0.0f;  // TAM SIFIR
+        // Tüm spread parametrelerini SIFIRLA
+        flSpreadX = 0.0f;
+        flSpreadY = 0.0f;
+        
+        // Shotgun için de randomize işlemini bypass et
+        if ( iBulletType == BULLET_PLAYER_BUCKSHOT ) {
+            // Shotgun'ı da normal silah gibi yap
+            for ( i = 0 ; i < 3; i++ ) {
+                vecDir[i] = vecDirShooting[i] + flSpreadX * right[ i ] + flSpreadY * up [ i ];
+                vecEnd[i] = vecSrc[ i ] + flDistance * vecDir[ i ];
+            }
+            continue; // Diğer kodu atla
+        }
     }
+    // ========== KESİN ÇÖZÜM SONU ==========
     
     int i;
     pmtrace_t tr;
