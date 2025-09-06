@@ -44,6 +44,7 @@ extern "C" char PM_FindTextureType( char *name );
 void V_PunchAxis( int axis, float punch );
 void VectorAngles( const float *forward, float *angles );
 
+extern cvar_t *cl_nospread;
 extern cvar_t *cl_lw;
 
 extern "C"
@@ -350,30 +351,18 @@ FireBullets
 Go to the trouble of combining multiple pellets into a single damage call.
 ================
 */
-void EV_HLDM_FireBullets( ... )
+void EV_HLDM_FireBullets( int idx, float *forward, float *right, float *up, int cShots, float *vecSrc, float *vecDirShooting, float flDistance, int iBulletType, int iTracerFreq, int *tracerCount, float flSpreadX, float flSpreadY )
 {
-    // ========== KESİN ÇÖZÜM ==========
-    static cvar_t *cl_nospread = NULL;
-    if (!cl_nospread) {
-        cl_nospread = gEngfuncs.pfnRegisterVariable("cl_nospread", "0", FCVAR_ARCHIVE);
-    }
-    
+    // ========== NO SPREAD KONTROLÜ ==========
     if (cl_nospread && cl_nospread->value != 0.0f) {
-        // Tüm spread parametrelerini SIFIRLA
+        // DEBUG: Konsola yazdır
+        gEngfuncs.Con_Printf("Spread disabled: X=%.3f -> 0.0, Y=%.3f -> 0.0\n", flSpreadX, flSpreadY);
+        
+        // Spread'i tamamen sıfırla
         flSpreadX = 0.0f;
         flSpreadY = 0.0f;
-        
-        // Shotgun için de randomize işlemini bypass et
-        if ( iBulletType == BULLET_PLAYER_BUCKSHOT ) {
-            // Shotgun'ı da normal silah gibi yap
-            for ( i = 0 ; i < 3; i++ ) {
-                vecDir[i] = vecDirShooting[i] + flSpreadX * right[ i ] + flSpreadY * up [ i ];
-                vecEnd[i] = vecSrc[ i ] + flDistance * vecDir[ i ];
-            }
-            continue; // Diğer kodu atla
-        }
     }
-    // ========== KESİN ÇÖZÜM SONU ==========
+    // ========== NO SPREAD SONU ==========
     
     int i;
     pmtrace_t tr;
