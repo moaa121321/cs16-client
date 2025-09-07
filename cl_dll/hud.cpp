@@ -45,6 +45,8 @@ cvar_t *cl_fog_g;
 cvar_t *cl_fog_b;
 cvar_t *cl_fog_density;
 
+cvar_t *cl_esp = NULL;
+
 extern client_sprite_t *GetSpriteList(client_sprite_t *pList, const char *psz, int iRes, int iCount);
 
 // Team Colors
@@ -311,8 +313,11 @@ void CHud :: Init( void )
 	cl_weapon_wallpuff = CVAR_CREATE( "cl_weapon_wallpuff", "1", FCVAR_ARCHIVE );
 	zoom_sens_ratio = CVAR_CREATE( "zoom_sensitivity_ratio", "1.2", 0 );
 
+	cl_esp = gEngfuncs.pfnRegisterVariable("cl_esp", "0", FCVAR_ARCHIVE);
+	
 	cl_charset = gEngfuncs.pfnGetCvarPointer( "cl_charset" );
 	con_charset = gEngfuncs.pfnGetCvarPointer( "con_charset" );
+
 
 	m_pShowHealth = CVAR_CREATE( "scoreboard_showhealth", "1", FCVAR_ARCHIVE );
 	m_pShowMoney = CVAR_CREATE( "scoreboard_showmoney", "1", FCVAR_ARCHIVE );
