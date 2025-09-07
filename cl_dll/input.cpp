@@ -42,7 +42,7 @@ int CL_ButtonBits( int );
 
 // xxx need client dll function to get and clear impuse
 extern cvar_t *in_joystick;
-extern playermove_t *pmove; // client.cpp'de tanımlı
+
 int	in_impulse	= 0;
 int	in_cancel	= 0;
 
@@ -50,9 +50,6 @@ cvar_t	*m_pitch;
 cvar_t	*m_yaw;
 cvar_t	*m_forward;
 cvar_t	*m_side;
-
-cvar_t *cl_strafehack = NULL;
-cvar_t *cl_strafehack_boost = NULL;
 
 cvar_t	*lookstrafe;
 cvar_t	*lookspring;
@@ -644,31 +641,6 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 2 ) we have finished signing on to server
 ================
 */
-// Basit Strafe Hack fonksiyonu
-void ApplyStrafeHack(struct usercmd_s *cmd)
-{
-    if (!cl_strafehack || cl_strafehack->value <= 0)
-        return;
-
-    // Yerdesek çalışma - sadece havada
-    if (pmove->onground != -1) // -1 = havada, 0 = yerde
-        return;
-
-    // Ölüysek veya mermi zamanı çalışma
-    if (CL_IsDead() || gHUD.m_iIntermission)
-        return;
-
-    // Basit strafe mantığı - sağ/sol dönüşümlü
-    static float strafe_dir = 1.0f;
-    strafe_dir = -strafe_dir; // Yön değiştir
-    
-    // Strafe miktarını hesapla
-    float strafe_power = cl_strafehack_boost->value * 250.0f;
-    cmd->sidemove += strafe_dir * strafe_power;
-
-    // Debug için (isteğe bağlı)
-    // gEngfuncs.Con_Printf("Strafe: %.1f\n", strafe_dir * strafe_power);
-}
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
 {	
 	float spd;
@@ -739,8 +711,6 @@ void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int activ
 
 		// Allow mice and other controllers to add their inputs
 		IN_Move ( frametime, cmd );
-		
-	    ApplyStrafeHack(cmd); // Strafe hack'i uygula
 	}
 
 	cmd->impulse = in_impulse;
@@ -1007,9 +977,6 @@ void InitInput (void)
 	m_forward			= gEngfuncs.pfnRegisterVariable ( "m_forward","1", FCVAR_ARCHIVE );
 	m_side				= gEngfuncs.pfnRegisterVariable ( "m_side","0.8", FCVAR_ARCHIVE );
 
-	cl_strafehack = gEngfuncs.pfnRegisterVariable("cl_strafehack", "0", FCVAR_ARCHIVE);
-    cl_strafehack_boost = gEngfuncs.pfnRegisterVariable("cl_strafehack_boost", "1.0", FCVAR_ARCHIVE);
-
 	// Initialize third person camera controls.
 	CAM_Init();
 	// Initialize inputs
@@ -1019,6 +986,7 @@ void InitInput (void)
 	// Initialize view system
 	V_Init();
 }
+
 /*
 ============
 Input_Shutdown
