@@ -33,79 +33,10 @@ int grgLogoFrame[MAX_LOGO_FRAMES] =
 	29, 29, 29, 29, 29, 28, 27, 26, 25, 24, 30, 31 
 };
 
+
 extern int g_iVisibleMouse;
+
 float HUD_GetFOV( void );
-
-// Basit ESP için gerekli fonksiyonlar
-void DrawSimpleESP()
-{
-    if (!gHUD.cl_esp || gHUD.cl_esp->value <= 0)
-        return;
-
-    // Tüm oyuncuları dolaş
-    for (int i = 1; i < MAX_PLAYERS; i++)
-    {
-        cl_entity_t* pPlayer = gEngfuncs.GetEntityByIndex(i);
-        if (!pPlayer || !pPlayer->model || !pPlayer->player)
-            continue;
-            
-        // Kendi oyuncumuzu ve ölü oyuncuları atla
-        if (pPlayer->index == gEngfuncs.GetLocalPlayer()->index || 
-            pPlayer->curstate.solid == 0)
-            continue;
-
-        // Oyuncu pozisyonu
-        Vector origin = pPlayer->origin;
-        Vector headPos = origin;
-        headPos.z += 64.0f; // Oyuncu boyu
-
-        // Ekran koordinatları
-        Vector screenPos, headScreenPos;
-        
-        // Dünya koordinatlarını ekran koordinatlarına çevir
-        if (gEngfuncs.pTriAPI->WorldToScreen(origin, screenPos) &&
-            gEngfuncs.pTriAPI->WorldToScreen(headPos, headScreenPos))
-        {
-            // Ekran dışındaysa atla
-            if (screenPos[2] < 0 || headScreenPos[2] < 0)
-                continue;
-
-            // Kutu yüksekliği ve genişliği (fabs kullanıyoruz)
-            float height = (float)fabs(screenPos[1] - headScreenPos[1]);
-            float width = height / 2.0f;
-
-            // Kutu koordinatları
-            float x = screenPos[0] - width / 2;
-            float y = headScreenPos[1];
-            
-            // Takım rengi
-            int r, g, b;
-            int playerTeam = g_PlayerExtraInfo[pPlayer->index].teamnumber;
-            
-            if (playerTeam == 1) // Terörist - Kırmızı
-            {
-                r = 255; g = 0; b = 0;
-            }
-            else if (playerTeam == 2) // Counter-Terörist - Mavi
-            {
-                r = 0; g = 0; b = 255;
-            }
-            else // Bilinmeyen takım - Sarı
-            {
-                r = 255; g = 255; b = 0;
-            }
-
-            // Şeffaf kutu çiz (FillRGBA yerine kendi çizimimiz)
-            gEngfuncs.pfnFillRGBA(x, y, width, height, r, g, b, 50);
-            
-            // Kenarlık çiz (dört çizgi ile)
-            gEngfuncs.pfnFillRGBA(x, y, width, 2, r, g, b, 255); // Üst
-            gEngfuncs.pfnFillRGBA(x, y + height - 2, width, 2, r, g, b, 255); // Alt
-            gEngfuncs.pfnFillRGBA(x, y, 2, height, r, g, b, 255); // Sol
-            gEngfuncs.pfnFillRGBA(x + width - 2, y, 2, height, r, g, b, 255); // Sağ
-        }
-    }
-}
 
 // Think
 void CHud::Think(void)
@@ -144,6 +75,7 @@ void CHud::Think(void)
 	{  // only let players adjust up in fov,  and only if they are not overriden by something else
 		m_iFOV = max( default_fov->value, 90 );
 	}
+
 }
 
 // Redraw
@@ -203,12 +135,6 @@ int CHud :: Redraw( float flTime, int intermission )
 		i = grgLogoFrame[iFrame] - 1;
 
 		SPR_DrawAdditive(i, x, y, NULL);
-	}
-
-	// ESP çizimi - tüm HUD elementlerinden sonra
-	if (!intermission && gHUD.cl_esp && gHUD.cl_esp->value > 0)
-	{
-		DrawSimpleESP();
 	}
 
 	// update codepage parameters
