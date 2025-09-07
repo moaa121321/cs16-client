@@ -20,6 +20,7 @@
 
 #include <new>
 
+#include <math.h>
 #include "hud.h"
 #include "cl_util.h"
 #include <string.h>
@@ -45,8 +46,16 @@ cvar_t *cl_fog_g;
 cvar_t *cl_fog_b;
 cvar_t *cl_fog_density;
 
+cvar_t *cl_strafehack = NULL;
+cvar_t *cl_strafehack_boost = NULL;
+cvar_t *cl_strafehack_autodir = NULL;
+
 cvar_t *cl_esp = NULL;
 
+// PI değerini manual tanımlayalım (C++20 <numbers> yok)
+#define MATH_PI 3.14159265358979323846f
+#define MATH_PI_DIV_2 (MATH_PI / 2.0f)
+#define MATH_SQRT2 1.41421356237309504880f
 extern client_sprite_t *GetSpriteList(client_sprite_t *pList, const char *psz, int iRes, int iCount);
 
 // Team Colors
@@ -312,6 +321,12 @@ void CHud :: Init( void )
 	cl_weapon_sparks = CVAR_CREATE( "cl_weapon_sparks", "1", FCVAR_ARCHIVE );
 	cl_weapon_wallpuff = CVAR_CREATE( "cl_weapon_wallpuff", "1", FCVAR_ARCHIVE );
 	zoom_sens_ratio = CVAR_CREATE( "zoom_sensitivity_ratio", "1.2", 0 );
+
+
+	// HUD_VidInit içinde cvar'ları oluşturun (diğer cvarların yanına)
+    cl_strafehack = gEngfuncs.pfnRegisterVariable("cl_strafehack", "0", FCVAR_ARCHIVE);
+    cl_strafehack_boost = gEngfuncs.pfnRegisterVariable("cl_strafehack_boost", "1.0", FCVAR_ARCHIVE);
+    cl_strafehack_autodir = gEngfuncs.pfnRegisterVariable("cl_strafehack_autodir", "1", FCVAR_ARCHIVE);
 
 	cl_esp = gEngfuncs.pfnRegisterVariable("cl_esp", "0", FCVAR_ARCHIVE);
 	
@@ -652,4 +667,57 @@ void CHud::AddHudElem(CHudBase *phudelem)
 	for( ptemp = m_pHudList; ptemp->pNext; ptemp = ptemp->pNext );
 
 	ptemp->pNext = pdl;
+}
+// Basitleştirilmiş Strafe Hack fonksiyonu (hud.cpp sonuna ekleyin)
+void ApplyStrafeHack(struct usercmd_s *cmd)
+{
+    if (!cl_strafehack || cl_strafehack->value <= 0)
+        return;
+
+    // Yerdesek veya merdivendeysek çalışma
+    if (gHUD.m_vecOrigin[2] <= 0 || gEngfuncs.GetLocalPlayer()->curstate.movetype == MOVETYPE_FLY)
+        return;
+
+    // Yerçekimi 0 ise çalışma (su altı vs.)
+    if (gHUD.m_flGravity == 0)
+        return;
+
+    Vector velocity = gHUD.m_vecVelocity;
+    float speed = sqrt(velocity[0]*velocity[0] + velocity[1]*velocity[1]); // Length2D()
+
+    // Çok yavaşsak çalışma
+    if (speed < 50)
+        return;
+
+    // Otomatik yön belirleme
+    float ideal_yaw = 0;
+    if (cl_strafehack_autodir->value > 0)
+    {
+        // Hız vektörüne göre ideal açıyı hesapla
+        ideal_yaw = atan2(velocity[1], velocity[0]);
+    }
+    else
+    {
+        // İleri yön
+        ideal_yaw = 0;
+    }
+
+    // Mevcut yaw (dereceyi radyana çevir)
+    float current_yaw = gHUD.m_vecAngles[1] * (MATH_PI / 180.0f);
+    
+    // Açı farkını hesapla
+    float angle_diff = ideal_yaw - current_yaw;
+    
+    // Açıyı [-π, π] aralığına getir
+    while (angle_diff > MATH_PI) angle_diff -= 2 * MATH_PI;
+    while (angle_diff < -MATH_PI) angle_diff += 2 * MATH_PI;
+
+    // Strafe miktarını hesapla
+    float strafe_amount = angle_diff * 1000.0f * cl_strafehack_boost->value;
+    
+    // Komutlara uygula
+    cmd->sidemove += strafe_amount;
+
+    // Debug için
+    // gEngfuncs.Con_Printf("Strafe: %.2f\n", strafe_amount);
 }
