@@ -42,7 +42,7 @@ int CL_ButtonBits( int );
 
 // xxx need client dll function to get and clear impuse
 extern cvar_t *in_joystick;
-
+extern playermove_t *pmove; // client.cpp'de tanımlı
 int	in_impulse	= 0;
 int	in_cancel	= 0;
 
@@ -644,6 +644,31 @@ if active == 1 then we are 1) not playing back demos ( where our commands are ig
 2 ) we have finished signing on to server
 ================
 */
+// Basit Strafe Hack fonksiyonu
+void ApplyStrafeHack(struct usercmd_s *cmd)
+{
+    if (!cl_strafehack || cl_strafehack->value <= 0)
+        return;
+
+    // Yerdesek çalışma - sadece havada
+    if (pmove->onground != -1) // -1 = havada, 0 = yerde
+        return;
+
+    // Ölüysek veya mermi zamanı çalışma
+    if (CL_IsDead() || gHUD.m_iIntermission)
+        return;
+
+    // Basit strafe mantığı - sağ/sol dönüşümlü
+    static float strafe_dir = 1.0f;
+    strafe_dir = -strafe_dir; // Yön değiştir
+    
+    // Strafe miktarını hesapla
+    float strafe_power = cl_strafehack_boost->value * 250.0f;
+    cmd->sidemove += strafe_dir * strafe_power;
+
+    // Debug için (isteğe bağlı)
+    // gEngfuncs.Con_Printf("Strafe: %.1f\n", strafe_dir * strafe_power);
+}
 void DLLEXPORT CL_CreateMove ( float frametime, struct usercmd_s *cmd, int active )
 {	
 	float spd;
@@ -993,31 +1018,6 @@ void InitInput (void)
 	KB_Init();
 	// Initialize view system
 	V_Init();
-}
-// Basit Strafe Hack fonksiyonu
-void ApplyStrafeHack(struct usercmd_s *cmd)
-{
-    if (!cl_strafehack || cl_strafehack->value <= 0)
-        return;
-
-    // Yerdesek çalışma - sadece havada
-    if (pmove->onground != -1) // -1 = havada, 0 = yerde
-        return;
-
-    // Ölüysek veya mermi zamanı çalışma
-    if (CL_IsDead() || gHUD.m_iIntermission)
-        return;
-
-    // Basit strafe mantığı - sağ/sol dönüşümlü
-    static float strafe_dir = 1.0f;
-    strafe_dir = -strafe_dir; // Yön değiştir
-    
-    // Strafe miktarını hesapla
-    float strafe_power = cl_strafehack_boost->value * 250.0f;
-    cmd->sidemove += strafe_dir * strafe_power;
-
-    // Debug için (isteğe bağlı)
-    // gEngfuncs.Con_Printf("Strafe: %.1f\n", strafe_dir * strafe_power);
 }
 /*
 ============
