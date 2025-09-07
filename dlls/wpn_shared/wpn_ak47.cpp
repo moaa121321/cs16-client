@@ -113,7 +113,6 @@ void CAK47::AK47Fire(float flSpread, float flCycleTime, BOOL fUseAutoAim)
 	if (CVAR_GET_FLOAT("cl_nospread") > 0)
 	{
 		flSpread = 0.0f; // Spread'i tamamen kaldır
-		m_flAccuracy = 0.0f; // Accuracy'yi de sıfırla (isteğe bağlı)
 	}
 	// --------------------- //
 
