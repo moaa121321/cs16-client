@@ -70,8 +70,8 @@ void DrawSimpleESP()
             if (screenPos[2] < 0 || headScreenPos[2] < 0)
                 continue;
 
-            // Kutu yüksekliği ve genişliği
-            float height = abs(screenPos[1] - headScreenPos[1]);
+            // Kutu yüksekliği ve genişliği (fabs kullanıyoruz)
+            float height = (float)fabs(screenPos[1] - headScreenPos[1]);
             float width = height / 2.0f;
 
             // Kutu koordinatları
@@ -95,9 +95,14 @@ void DrawSimpleESP()
                 r = 255; g = 255; b = 0;
             }
 
-            // Kutu çiz
-            gEngfuncs.pfnFillRGBABlend(x, y, width, height, r, g, b, 50); // Şeffaf kutu
-            gEngfuncs.pfnDrawRectangle(x, y, x + width, y + height, r, g, b, 255); // Kenarlık
+            // Şeffaf kutu çiz (FillRGBA yerine kendi çizimimiz)
+            gEngfuncs.pfnFillRGBA(x, y, width, height, r, g, b, 50);
+            
+            // Kenarlık çiz (dört çizgi ile)
+            gEngfuncs.pfnFillRGBA(x, y, width, 2, r, g, b, 255); // Üst
+            gEngfuncs.pfnFillRGBA(x, y + height - 2, width, 2, r, g, b, 255); // Alt
+            gEngfuncs.pfnFillRGBA(x, y, 2, height, r, g, b, 255); // Sol
+            gEngfuncs.pfnFillRGBA(x + width - 2, y, 2, height, r, g, b, 255); // Sağ
         }
     }
 }
