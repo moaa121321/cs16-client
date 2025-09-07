@@ -38,6 +38,88 @@ extern int g_iVisibleMouse;
 
 float HUD_GetFOV( void );
 
+// hud_redraw.cpp dosyasının en üstüne bu yapıları ve namespace'i ekleyin
+struct vec2 { float x, y; };
+struct vec3 { float x, y, z; };
+struct vec4 { float x, y, z, w; };
+
+namespace GL {
+    int viewport[4];
+    
+    void SetupOrtho();
+    void Restore();
+    void DrawFilledRect(float x, float y, float width, float height, const unsigned char color[3]);
+    void DrawOutline(float x, float y, float width, float height, float lineWidth, const unsigned char color[3]);
+    void DrawCrosshair(vec2& l1p1, vec2& l1p2, vec2& l2p1, vec2& l2p2, float lineWidth, const unsigned char color[3]);
+    void DrawESPBox(vec2 head, vec2 feet, float lineWidth, const unsigned char color[3]);
+    bool WorldToScreen(vec3 pos, vec2& screen, float matrix[16], int windowWidth, int windowHeight);
+}
+
+// ESP çizim fonksiyonları
+void DrawESP()
+{
+    if (!gHUD.cl_esp || gHUD.cl_esp->value <= 0)
+        return;
+        
+    GL::SetupOrtho();
+    
+    for (int i = 1; i < MAX_PLAYERS; i++)
+    {
+        cl_entity_t* pPlayer = gEngfuncs.GetEntityByIndex(i);
+        if (!pPlayer || !pPlayer->model || !pPlayer->player)
+            continue;
+            
+        // Kendi oyuncumuzu ve ölü oyuncuları atla
+        if (pPlayer->index == gEngfuncs.GetLocalPlayer()->index || 
+            pPlayer->curstate.solid == 0)
+            continue;
+            
+        DrawPlayerESP(pPlayer);
+    }
+    
+    GL::Restore();
+}
+
+void DrawPlayerESP(cl_entity_t* pPlayer)
+{
+    vec3 origin = pPlayer->origin;
+    vec3 headPos = origin;
+    headPos.z += 64.0f; // Oyuncu boyu
+    
+    vec2 feetScreen, headScreen;
+    float matrix[16];
+    
+    gEngfuncs.pTriAPI->GetMatrix(GL_MODELVIEW_MATRIX, matrix);
+    
+    int width = ScreenWidth();
+    int height = ScreenHeight();
+    
+    if (GL::WorldToScreen(origin, feetScreen, matrix, width, height) &&
+        GL::WorldToScreen(headPos, headScreen, matrix, width, height))
+    {
+        // Takım renklerine göre ESP rengi
+        unsigned char color[3];
+        
+        // Team bilgisini g_PlayerExtraInfo'dan al
+        int playerTeam = g_PlayerExtraInfo[pPlayer->index].teamnumber;
+        
+        if (playerTeam == 1) // Terörist - Kırmızı
+        {
+            color[0] = 255; color[1] = 0; color[2] = 0;
+        }
+        else if (playerTeam == 2) // Counter-Terörist - Mavi
+        {
+            color[0] = 0; color[1] = 0; color[2] = 255;
+        }
+        else // Bilinmeyen takım - Sarı
+        {
+            color[0] = 255; color[1] = 255; color[2] = 0;
+        }
+        
+        GL::DrawESPBox(headScreen, feetScreen, 2.0f, color);
+    }
+}
+
 // Think
 void CHud::Think(void)
 {
@@ -137,6 +219,12 @@ int CHud :: Redraw( float flTime, int intermission )
 		SPR_DrawAdditive(i, x, y, NULL);
 	}
 
+	// Bu satırı en sona ekleyin (tüm HUD çizimlerinden sonra)
+	if (!intermission && gHUD.cl_esp && gHUD.cl_esp->value > 0)
+	{
+		DrawESP();
+	}
+
 	// update codepage parameters
 	if( !stricmp( con_charset->string, "cp1251" ))
 	{
@@ -173,4 +261,112 @@ void CHud::UpdateDefaultHUDColor()
 	} else {
 		m_iDefaultHUDColor = RGB_YELLOWISH;
 	}
+}
+
+// GL fonksiyonlarının implementasyonu
+void GL::SetupOrtho()
+{
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0, viewport[2], viewport[3], 0, 0, 1);
+    glDisable(GL_DEPTH_TEST);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glDisable(GL_TEXTURE_2D);
+}
+
+void GL::Restore()
+{
+    glEnable(GL_TEXTURE_2D);
+    glPopMatrix();
+}
+
+void GL::DrawFilledRect(float x, float y, float width, float height, const unsigned char color[3])
+{
+    glColor4ub(color[0], color[1], color[2], 255);
+    glBegin(GL_QUADS);
+    glVertex2f(x, y);
+    glVertex2f(x + width, y);
+    glVertex2f(x + width, y + height);
+    glVertex2f(x, y + height);
+    glEnd();
+}
+
+void GL::DrawOutline(float x, float y, float width, float height, float lineWidth, const unsigned char color[3])
+{
+    glLineWidth(lineWidth);
+    glBegin(GL_LINE_STRIP);
+    glColor4ub(color[0], color[1], color[2], 255);
+    glVertex2f(x - 0.5f, y - 0.5f);
+    glVertex2f(x + width + 0.5f, y - 0.5f);
+    glVertex2f(x + width + 0.5f, y + height + 0.5f);
+    glVertex2f(x - 0.5f, y + height + 0.5f);
+    glVertex2f(x - 0.5f, y - 0.5f);
+    glEnd();
+}
+
+void GL::DrawESPBox(vec2 head, vec2 feet, float lineWidth, const unsigned char color[3])
+{
+    glLineWidth(lineWidth);
+    glBegin(GL_LINE_STRIP);
+
+    int height = abs(head.y - feet.y);
+    vec2 tl, tr, bl, br;
+
+    tl.x = head.x - height / 4;
+    tr.x = head.x + height / 4;
+    tl.y = tr.y = head.y;
+
+    bl.x = feet.x - height / 4;
+    br.x = feet.x + height / 4;
+    bl.y = br.y = feet.y;
+
+    // outline
+    glColor4ub(0, 0, 0, 255/2);
+    glVertex2f(tl.x - 1, tl.y - 1);
+    glVertex2f(tr.x + 1, tr.y - 1);
+    glVertex2f(br.x + 1, br.y + 1);
+    glVertex2f(bl.x - 1, bl.y + 1);
+    glVertex2f(tl.x - 1, tl.y);
+    // inline
+    glVertex2f(tl.x + 1, tl.y + 1);
+    glVertex2f(tr.x - 1, tr.y + 1);
+    glVertex2f(br.x - 1, br.y - 1);
+    glVertex2f(bl.x + 1, bl.y - 1);
+    glVertex2f(tl.x + 1, tl.y + 1);
+
+    glColor4ub(color[0], color[1], color[2], 255);
+    glVertex2f(tl.x, tl.y);
+    glVertex2f(tr.x, tr.y);
+    glVertex2f(br.x, br.y);
+    glVertex2f(bl.x, bl.y);
+    glVertex2f(tl.x, tl.y);
+
+    glEnd();
+}
+
+bool GL::WorldToScreen(vec3 pos, vec2& screen, float matrix[16], int windowWidth, int windowHeight)
+{
+    // Matrix-vector Product, multiplying world(eye) coordinates by projection matrix = clipCoords
+    vec4 clipCoords;
+    clipCoords.x = pos.x * matrix[0] + pos.y * matrix[4] + pos.z * matrix[8] + matrix[12];
+    clipCoords.y = pos.x * matrix[1] + pos.y * matrix[5] + pos.z * matrix[9] + matrix[13];
+    clipCoords.z = pos.x * matrix[2] + pos.y * matrix[6] + pos.z * matrix[10] + matrix[14];
+    clipCoords.w = pos.x * matrix[3] + pos.y * matrix[7] + pos.z * matrix[11] + matrix[15];
+
+    if (clipCoords.w < 0.1f)
+        return false;
+
+    // perspective division, dividing by clip.W = Normalized Device Coordinates
+    vec3 NDC;
+    NDC.x = clipCoords.x / clipCoords.w;
+    NDC.y = clipCoords.y / clipCoords.w;
+    NDC.z = clipCoords.z / clipCoords.w;
+
+    // Transform to window coordinates
+    screen.x = (windowWidth / 2 * NDC.x) + (NDC.x + windowWidth / 2);
+    screen.y = -(windowHeight / 2 * NDC.y) + (NDC.y + windowHeight / 2);
+    return true;
 }
