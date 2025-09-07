@@ -2,7 +2,7 @@
 
 //AK47
 #define AK47_MAX_SPEED			221
-#define AK47_DAMAGE			36
+#define AK47_DAMAGE			100
 #define AK47_RANGE_MODIFER		0.98
 #define AK47_RELOAD_TIME		2.45
 
@@ -596,3 +596,4 @@ enum xm1014_e
 	XM1014_START_RELOAD,
 	XM1014_DRAW
 };
+
