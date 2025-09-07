@@ -19,7 +19,7 @@
 #include "weapons.h"
 
 LINK_ENTITY_TO_CLASS(weapon_ak47, CAK47)
-extern cvar_t *cl_nospread = NULL;
+
 
 void CAK47::Spawn(void)
 {
