@@ -19,6 +19,7 @@
 #include "weapons.h"
 
 LINK_ENTITY_TO_CLASS(weapon_ak47, CAK47)
+extern cvar_t *cl_nospread = NULL;
 
 void CAK47::Spawn(void)
 {
@@ -105,6 +106,15 @@ void CAK47::AK47Fire(float flSpread, float flCycleTime, BOOL fUseAutoAim)
 
 	if (m_flAccuracy > 1.25f)
 		m_flAccuracy = 1.25f;
+
+	// --- NO SPREAD EKLE --- //
+	// NoSpread aktifse spread'i sıfırla
+	if (cl_nospread && cl_nospread->value > 0)
+	{
+		flSpread = 0.0f; // Spread'i tamamen kaldır
+		m_flAccuracy = 0.0f; // Accuracy'yi de sıfırla (isteğe bağlı)
+	}
+	// --------------------- //
 
 	if (m_iClip <= 0)
 	{
