@@ -107,14 +107,13 @@ void CAK47::AK47Fire(float flSpread, float flCycleTime, BOOL fUseAutoAim)
 	if (m_flAccuracy > 1.25f)
 		m_flAccuracy = 1.25f;
 
-	// --- NO SPREAD EKLE --- //
-	// NoSpread aktifse spread'i sıfırla
-	// NoSpread ekle
-	if (CVAR_GET_FLOAT("cl_nospread") > 0)
+		// --- SADECE ACCURACY DÜZELTME --- //
+	#ifdef CLIENT_DLL
+	if (gEngfuncs.pfnGetCvarFloat("cl_nospread") > 0)
 	{
-		flSpread = 0.0f; // Spread'i tamamen kaldır
+		m_flAccuracy = 0.0f; // Sadece accuracy'yi düzelt
 	}
-	// --------------------- //
+	#endif
 
 	if (m_iClip <= 0)
 	{
